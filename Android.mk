@@ -19,6 +19,12 @@ ifneq ($(TARGET_ARCH),arm)
 ANDROID_JPEG_NO_ASSEMBLER := true
 endif
 
+ifeq ($(TARGET_ARCH_VERSION),armv4t)
+$(warning The assembler implementation of parts of libjpeg is disabled for armv4t... It should be implemented instead.)
+ANDROID_JPEG_NO_ASSEMBLER := true
+endif
+
+
 # temp fix until we understand why this broke cnn.com
 #ANDROID_JPEG_NO_ASSEMBLER := true
 
