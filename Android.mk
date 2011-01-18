@@ -35,8 +35,12 @@ ifeq ($(TARGET_ARCH_VARIANT),x86-atom)
   LOCAL_SRC_FILES += jidctintelsse.c
 endif
 
-# enable armv6 idct assembly
 ifeq ($(strip $(TARGET_ARCH)),arm)
+  ifeq ($(ARCH_ARM_HAVE_NEON),true)
+    # enable neon assembly
+    LOCAL_CFLAGS += -D__ARM_HAVE_NEON
+  endif
+  # enable armv6 idct assembly
   LOCAL_CFLAGS += -DANDROID_ARMV6_IDCT
 endif
 
