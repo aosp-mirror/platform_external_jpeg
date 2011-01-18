@@ -49,12 +49,14 @@ use_merged_upsample (j_decompress_ptr cinfo)
     return FALSE;
 
 #ifdef ANDROID_RGB
-  /* jdmerge.c only supports YCC=>RGB565 and YCC=>RGB color conversion */
+  /* jdmerge.c only supports YCC=>RGB565, YCC=>RGBA8888 and YCC=>RGB color conversion */
   if (cinfo->jpeg_color_space != JCS_YCbCr || 
       cinfo->num_components != 3 ||
-      cinfo->out_color_components != 3 ||
-      (cinfo->out_color_space != JCS_RGB_565 && 
-         cinfo->out_color_space != JCS_RGB)) {
+      ((cinfo->out_color_components != 3 ||
+         (cinfo->out_color_space != JCS_RGB_565 &&
+          cinfo->out_color_space != JCS_RGB)) &&
+       (cinfo->out_color_components != 4 ||
+         cinfo->out_color_space != JCS_RGBA_8888))) {
     return FALSE;
   }
 #else
