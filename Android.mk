@@ -10,8 +10,8 @@ LOCAL_SRC_FILES := \
 	jdatadst.c jdatasrc.c jdcoefct.c jdcolor.c jddctmgr.c jdhuff.c \
 	jdinput.c jdmainct.c jdmarker.c jdmaster.c jdmerge.c jdphuff.c \
 	jdpostct.c jdsample.c jdtrans.c jerror.c jfdctflt.c jfdctfst.c \
-	jfdctint.c jidctflt.c jidctfst.c jidctint.c jidctred.c jquant1.c \
-	jquant2.c jutils.c jmemmgr.c armv6_idct.S
+	jfdctint.c jidctflt.c jidctint.c jquant1.c \
+	jquant2.c jutils.c jmemmgr.c
 
 # use ashmem as libjpeg decoder's backing store
 LOCAL_CFLAGS += -DUSE_ANDROID_ASHMEM
@@ -30,8 +30,15 @@ LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
 # enable tile based decode
 LOCAL_CFLAGS += -DANDROID_TILE_BASED_DECODE
 
+# enable neon assembly
+ifeq ($(ARCH_ARM_HAVE_NEON),true)
+LOCAL_CFLAGS += -D__ARM_HAVE_NEON
+LOCAL_SRC_FILES += jidctfst_neon.S jidctred_neon.S
+else
 # enable armv6 idct assembly
 LOCAL_CFLAGS += -DANDROID_ARMV6_IDCT
+LOCAL_SRC_FILES += jidctfst.c jidctred.c armv6_idct.S
+endif
 
 LOCAL_MODULE:= libjpeg
 
