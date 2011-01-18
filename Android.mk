@@ -33,6 +33,11 @@ LOCAL_CFLAGS += -DANDROID_TILE_BASED_DECODE
 # enable armv6 idct assembly
 LOCAL_CFLAGS += -DANDROID_ARMV6_IDCT
 
+# enable neon assembly
+ifeq ($(ARCH_ARM_HAVE_NEON),true)
+LOCAL_CFLAGS += -D__ARM_HAVE_NEON
+endif
+
 LOCAL_MODULE:= libjpeg
 
 LOCAL_SHARED_LIBRARIES := \
