@@ -36,6 +36,7 @@ LOCAL_CFLAGS += -DANDROID_ARMV6_IDCT
 # enable neon assembly
 ifeq ($(ARCH_ARM_HAVE_NEON),true)
 LOCAL_CFLAGS += -D__ARM_HAVE_NEON
+LOCAL_SRC_FILES += jidctfst_neon.S jidctred_neon.S
 endif
 
 LOCAL_MODULE:= libjpeg
