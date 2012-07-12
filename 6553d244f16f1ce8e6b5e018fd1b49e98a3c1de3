@@ -16,6 +16,24 @@
       "revId": "6553d244f16f1ce8e6b5e018fd1b49e98a3c1de3",
       "serverId": "85c56323-6fa9-3386-8a01-6480fb634889",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "AAAHJ3///W4\u003d",
+        "filename": "Android.mk",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1010186
+      },
+      "writtenOn": "2012-07-12T22:03:29Z",
+      "side": 1,
+      "message": "Could you do \n   ifeq ($(TARGET_ARCH),x86)",
+      "parentUuid": "AAAHJ3///XA\u003d",
+      "revId": "6553d244f16f1ce8e6b5e018fd1b49e98a3c1de3",
+      "serverId": "85c56323-6fa9-3386-8a01-6480fb634889",
+      "unresolved": false
     }
   ]
 }
