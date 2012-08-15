@@ -17,7 +17,7 @@
 #define JPEG_INTERNALS
 #include "jinclude.h"
 #include "jpeglib.h"
-#include "jchuff.h"		/* Declarations shared with jcphuff.c */
+#include "jchuff.h"            /* Declarations shared with jcphuff.c */
 
 
 /* Expanded entropy encoder object for Huffman encoding.
@@ -30,27 +30,45 @@ typedef struct {
   INT32 put_buffer;		/* current bit-accumulation buffer */
   int put_bits;			/* # of bits now in it */
   int last_dc_val[MAX_COMPS_IN_SCAN]; /* last DC coef for each component */
+#ifdef IPP_ENCODE
+  IppiEncodeHuffmanState* pEncHuffState;
+#endif
 } savable_state;
 
 /* This macro is to work around compilers with missing or broken
  * structure assignment.  You'll need to fix this code if you have
  * such a compiler and you change MAX_COMPS_IN_SCAN.
  */
-
+#ifndef IPP_ENCODE
 #ifndef NO_STRUCT_ASSIGN
 #define ASSIGN_STATE(dest,src)  ((dest) = (src))
 #else
 #if MAX_COMPS_IN_SCAN == 4
 #define ASSIGN_STATE(dest,src)  \
-	((dest).put_buffer = (src).put_buffer, \
-	 (dest).put_bits = (src).put_bits, \
-	 (dest).last_dc_val[0] = (src).last_dc_val[0], \
-	 (dest).last_dc_val[1] = (src).last_dc_val[1], \
-	 (dest).last_dc_val[2] = (src).last_dc_val[2], \
-	 (dest).last_dc_val[3] = (src).last_dc_val[3])
+  ((dest).put_buffer = (src).put_buffer, \
+   (dest).put_bits = (src).put_bits, \
+   (dest).last_dc_val[0] = (src).last_dc_val[0], \
+   (dest).last_dc_val[1] = (src).last_dc_val[1], \
+   (dest).last_dc_val[2] = (src).last_dc_val[2], \
+   (dest).last_dc_val[3] = (src).last_dc_val[3])
 #endif
 #endif
-
+#else
+#ifndef NO_STRUCT_ASSIGN
+#define ASSIGN_STATE(dest,src)  ((dest) = (src))
+#else
+#if MAX_COMPS_IN_SCAN == 4
+#define ASSIGN_STATE(dest,src)  \
+  ((dest).put_buffer = (src).put_buffer, \
+   (dest).put_bits = (src).put_bits, \
+   (dest).last_dc_val[0] = (src).last_dc_val[0], \
+   (dest).last_dc_val[1] = (src).last_dc_val[1], \
+   (dest).last_dc_val[2] = (src).last_dc_val[2], \
+   (dest).last_dc_val[3] = (src).last_dc_val[3]) \
+   (dest).pEncHuffState  = (src).pEncHuffState)
+#endif
+#endif
+#endif
 
 typedef struct {
   struct jpeg_entropy_encoder pub; /* public fields */
@@ -149,14 +167,35 @@ start_pass_huff (j_compress_ptr cinfo, boolean gather_statistics)
     } else {
       /* Compute derived values for Huffman tables */
       /* We may do this more than once for a table, but it's not expensive */
-      jpeg_make_c_derived_tbl(cinfo, TRUE, dctbl,
+#ifdef IPP_ENCODE
+      jpeg_make_c_derived_tbl_ipp(cinfo, TRUE, dctbl,
 			      & entropy->dc_derived_tbls[dctbl]);
-      jpeg_make_c_derived_tbl(cinfo, FALSE, actbl,
+      jpeg_make_c_derived_tbl_ipp(cinfo, FALSE, actbl,
 			      & entropy->ac_derived_tbls[actbl]);
+#else
+      jpeg_make_c_derived_tbl(cinfo, TRUE, dctbl,
+				& entropy->dc_derived_tbls[dctbl]);
+      jpeg_make_c_derived_tbl(cinfo, FALSE, actbl,
+				& entropy->ac_derived_tbls[actbl]);
+#endif
     }
     /* Initialize DC predictions to 0 */
     entropy->saved.last_dc_val[ci] = 0;
   }
+
+#ifdef IPP_ENCODE
+  {
+    int size = 0;
+    entropy->saved.pEncHuffState = NULL;
+
+    ippiEncodeHuffmanStateGetBufSize_JPEG_8u(&size);
+
+    entropy->saved.pEncHuffState = (IppiEncodeHuffmanState*)
+		(*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_IMAGE, size);
+
+	ippiEncodeHuffmanStateInit_JPEG_8u(entropy->saved.pEncHuffState);
+  }
+#endif
 
   /* Initialize bit buffer to empty */
   entropy->saved.put_buffer = 0;
@@ -174,6 +213,51 @@ start_pass_huff (j_compress_ptr cinfo, boolean gather_statistics)
  *
  * Note this is also used by jcphuff.c.
  */
+
+#ifdef IPP_ENCODE
+GLOBAL(void)
+jpeg_make_c_derived_tbl_ipp (j_compress_ptr cinfo, boolean isDC, int tblno,
+			 c_derived_tbl ** pdtbl)
+{
+  JHUFF_TBL* htbl;
+  IppStatus  status;
+
+  /* Find the input Huffman table */
+  if(tblno < 0 || tblno >= NUM_HUFF_TBLS)
+    ERREXIT1(cinfo, JERR_NO_HUFF_TABLE, tblno);
+
+  htbl = isDC ? cinfo->dc_huff_tbl_ptrs[tblno] : cinfo->ac_huff_tbl_ptrs[tblno];
+
+  if(htbl == NULL)
+    ERREXIT1(cinfo, JERR_NO_HUFF_TABLE, tblno);
+
+  /* Allocate a workspace if we haven't already done so. */
+  if(*pdtbl == NULL)
+  {
+    int size = 0;
+
+    *pdtbl = (c_derived_tbl *)
+      (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_IMAGE,
+          SIZEOF(c_derived_tbl));
+
+    ippiEncodeHuffmanSpecGetBufSize_JPEG_8u(&size);
+
+    (*pdtbl)->pHuffTbl = (IppiEncodeHuffmanSpec*)
+      (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_IMAGE, size);
+  }
+
+  htbl->bits[0] = 0;
+
+  status = ippiEncodeHuffmanSpecInit_JPEG_8u(&htbl->bits[1],htbl->huffval,(*pdtbl)->pHuffTbl);
+
+  if(ippStsNoErr != status)
+  {
+    ERREXIT(cinfo, JERR_BAD_HUFF_TABLE);
+  }
+
+  return;
+} /* jpeg_make_c_derived_tbl_ipp() */
+#endif
 
 GLOBAL(void)
 jpeg_make_c_derived_tbl (j_compress_ptr cinfo, boolean isDC, int tblno,
@@ -273,6 +357,26 @@ jpeg_make_c_derived_tbl (j_compress_ptr cinfo, boolean isDC, int tblno,
 	    if (! dump_buffer(state))  \
 	      { action; } }
 
+#ifdef IPP_ENCODE
+LOCAL(boolean)
+dump_buffer_ipp (working_state * state)
+/* Empty the output buffer; return TRUE if successful, FALSE if must suspend */
+{
+  struct jpeg_destination_mgr* dest = state->cinfo->dest;
+
+  dest->next_output_byte = state->next_output_byte;
+  dest->free_in_buffer   = state->free_in_buffer;
+
+  if(! (*dest->empty_output_buffer)(state->cinfo))
+    return FALSE;
+
+  /* After a successful buffer dump, must reset buffer pointers */
+  state->next_output_byte = dest->next_output_byte;
+  state->free_in_buffer   = dest->free_in_buffer;
+
+  return TRUE;
+} /* dump_buffer_intellib() */
+#endif
 
 LOCAL(boolean)
 dump_buffer (working_state * state)
@@ -335,6 +439,41 @@ emit_bits (working_state * state, unsigned int code, int size)
   return TRUE;
 }
 
+#ifdef IPP_ENCODE
+LOCAL(boolean)
+flush_bits_ipp (working_state * state)
+{
+  int currPos = 0;
+  IppStatus status;
+
+  if(state->free_in_buffer < 128)
+  {
+    dump_buffer_ipp(state);
+  }
+
+  status = ippiEncodeHuffman8x8_JPEG_16s1u_C1(
+    0,
+    state->next_output_byte,
+    state->free_in_buffer,
+    &currPos,
+    0,
+    0,
+    0,
+    state->cur.pEncHuffState,
+    1);
+
+  if(ippStsNoErr != status)
+  {
+    return FALSE;
+  }
+
+  state->next_output_byte += currPos;
+  state->free_in_buffer   -= currPos;
+
+  return TRUE;
+} /* flush_bits_ipp() */
+#endif
+
 
 LOCAL(boolean)
 flush_bits (working_state * state)
@@ -348,6 +487,43 @@ flush_bits (working_state * state)
 
 
 /* Encode a single block's worth of coefficients */
+
+#ifdef IPP_ENCODE
+LOCAL(boolean)
+encode_one_block_ipp (working_state * state, JCOEFPTR block, int last_dc_val,
+		  c_derived_tbl *dctbl, c_derived_tbl *actbl)
+{
+  int currPos = 0;
+  Ipp16s lastDC = (Ipp16s)last_dc_val;
+  IppStatus status;
+
+  if(state->free_in_buffer < 128)
+  {
+    dump_buffer_ipp(state);
+  }
+
+  status = ippiEncodeHuffman8x8_JPEG_16s1u_C1(
+    block,
+    state->next_output_byte,
+    state->free_in_buffer,
+    &currPos,
+    &lastDC,
+    dctbl->pHuffTbl,
+    actbl->pHuffTbl,
+    state->cur.pEncHuffState,
+    0);
+
+  if(ippStsNoErr != status)
+  {
+    return FALSE;
+  }
+
+  state->next_output_byte += currPos;
+  state->free_in_buffer   -= currPos;
+
+  return TRUE;
+} /* encode_one_block_intellib() */
+#endif
 
 LOCAL(boolean)
 encode_one_block (working_state * state, JCOEFPTR block, int last_dc_val,
@@ -446,6 +622,28 @@ encode_one_block (working_state * state, JCOEFPTR block, int last_dc_val,
 /*
  * Emit a restart marker & resynchronize predictions.
  */
+#ifdef IPP_ENCODE
+LOCAL(boolean)
+emit_restart_ipp (working_state * state, int restart_num)
+{
+  int ci;
+
+  if (! flush_bits_ipp(state))
+    return FALSE;
+
+  emit_byte(state, 0xFF, return FALSE);
+  emit_byte(state, JPEG_RST0 + restart_num, return FALSE);
+
+  /* Re-initialize DC predictions to 0 */
+  for (ci = 0; ci < state->cinfo->comps_in_scan; ci++)
+    state->cur.last_dc_val[ci] = 0;
+
+  /* The restart counter is not updated until we successfully write the MCU. */
+
+  return TRUE;
+}
+
+#endif
 
 LOCAL(boolean)
 emit_restart (working_state * state, int restart_num)
@@ -489,7 +687,11 @@ encode_mcu_huff (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
   /* Emit restart marker if needed */
   if (cinfo->restart_interval) {
     if (entropy->restarts_to_go == 0)
+#ifdef IPP_ENCODE
+      if (! emit_restart_ipp(&state, entropy->next_restart_num))
+#else
       if (! emit_restart(&state, entropy->next_restart_num))
+#endif
 	return FALSE;
   }
 
@@ -497,10 +699,17 @@ encode_mcu_huff (j_compress_ptr cinfo, JBLOCKROW *MCU_data)
   for (blkn = 0; blkn < cinfo->blocks_in_MCU; blkn++) {
     ci = cinfo->MCU_membership[blkn];
     compptr = cinfo->cur_comp_info[ci];
+#ifdef IPP_ENCODE
+    if (! encode_one_block_ipp(&state,
+			   MCU_data[blkn][0], state.cur.last_dc_val[ci],
+			   entropy->dc_derived_tbls[compptr->dc_tbl_no],
+			   entropy->ac_derived_tbls[compptr->ac_tbl_no]))
+#else
     if (! encode_one_block(&state,
 			   MCU_data[blkn][0], state.cur.last_dc_val[ci],
 			   entropy->dc_derived_tbls[compptr->dc_tbl_no],
 			   entropy->ac_derived_tbls[compptr->ac_tbl_no]))
+#endif
       return FALSE;
     /* Update last_dc_val */
     state.cur.last_dc_val[ci] = MCU_data[blkn][0][0];
@@ -542,8 +751,13 @@ finish_pass_huff (j_compress_ptr cinfo)
   state.cinfo = cinfo;
 
   /* Flush out the last data */
+#ifdef IPP_ENCODE
+  if (! flush_bits_ipp(&state))
+    ERREXIT(cinfo, JERR_CANT_SUSPEND);
+#else
   if (! flush_bits(&state))
     ERREXIT(cinfo, JERR_CANT_SUSPEND);
+#endif
 
   /* Update state */
   cinfo->dest->next_output_byte = state.next_output_byte;

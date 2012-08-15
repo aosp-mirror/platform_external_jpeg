@@ -43,4 +43,15 @@ LOCAL_MODULE:= libjpeg
 LOCAL_SHARED_LIBRARIES := \
 	libcutils
 
+ifeq ($(TARGET_USE_JPEG_IPP_ENCODE),true)
+# enable encoding IPP optimization
+LOCAL_CFLAGS += -DIPP_ENCODE
+LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/ipp
+LOCAL_STATIC_LIBRARIES := \
+        libippj \
+        libippi \
+        libipps \
+        libippcore
+endif
+
 include $(BUILD_SHARED_LIBRARY)

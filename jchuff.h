@@ -16,6 +16,10 @@
  * Hence the magnitude should always fit in 10 or 14 bits respectively.
  */
 
+#ifdef IPP_ENCODE
+#include "ippj.h"
+#endif
+
 #if BITS_IN_JSAMPLE == 8
 #define MAX_COEF_BITS 10
 #else
@@ -28,6 +32,9 @@ typedef struct {
   unsigned int ehufco[256];	/* code for each symbol */
   char ehufsi[256];		/* length of code for each symbol */
   /* If no code has been allocated for a symbol S, ehufsi[S] contains 0 */
+#ifdef IPP_ENCODE
+  IppiEncodeHuffmanSpec* pHuffTbl;
+#endif
 } c_derived_tbl;
 
 /* Short forms of external names for systems with brain-damaged linkers. */
@@ -41,6 +48,12 @@ typedef struct {
 EXTERN(void) jpeg_make_c_derived_tbl
 	JPP((j_compress_ptr cinfo, boolean isDC, int tblno,
 	     c_derived_tbl ** pdtbl));
+
+#ifdef IPP_ENCODE
+EXTERN(void) jpeg_make_c_derived_tbl_ipp
+	JPP((j_compress_ptr cinfo, boolean isDC, int tblno,
+	     c_derived_tbl ** pdtbl));
+#endif
 
 /* Generate an optimal table definition given the specified counts */
 EXTERN(void) jpeg_gen_optimal_table

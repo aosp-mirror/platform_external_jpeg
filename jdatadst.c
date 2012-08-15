@@ -77,6 +77,31 @@ init_destination (j_compress_ptr cinfo)
  * write it out when emptying the buffer externally.
  */
 
+#ifdef IPP_ENCODE
+METHODDEF(boolean)
+empty_output_buffer_ipp(j_compress_ptr cinfo)
+{
+  size_t bytes_to_write;
+  my_dest_ptr dest = (my_dest_ptr) cinfo->dest;
+
+  if(cinfo->progressive_mode)
+  {
+    bytes_to_write = OUTPUT_BUF_SIZE;
+  } else
+  {
+    bytes_to_write = OUTPUT_BUF_SIZE - dest->pub.free_in_buffer;
+  }
+
+  if(JFWRITE(dest->outfile,dest->buffer,bytes_to_write) != bytes_to_write)
+    ERREXIT(cinfo, JERR_FILE_WRITE);
+
+  dest->pub.next_output_byte = dest->buffer;
+  dest->pub.free_in_buffer   = OUTPUT_BUF_SIZE;
+
+  return TRUE;
+} /* empty_output_buffer_ipp() */
+#endif
+
 METHODDEF(boolean)
 empty_output_buffer (j_compress_ptr cinfo)
 {
@@ -145,7 +170,11 @@ jpeg_stdio_dest (j_compress_ptr cinfo, FILE * outfile)
 
   dest = (my_dest_ptr) cinfo->dest;
   dest->pub.init_destination = init_destination;
+#ifdef IPP_ENCODE
+  dest->pub.empty_output_buffer = empty_output_buffer_ipp;
+#else
   dest->pub.empty_output_buffer = empty_output_buffer;
+#endif
   dest->pub.term_destination = term_destination;
   dest->outfile = outfile;
 }

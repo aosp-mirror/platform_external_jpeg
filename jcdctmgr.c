@@ -16,6 +16,9 @@
 #include "jpeglib.h"
 #include "jdct.h"		/* Private declarations for DCT subsystem */
 
+#ifdef IPP_ENCODE
+#include "ippj.h"
+#endif
 
 /* Private subobject for this module */
 
@@ -59,6 +62,21 @@ start_pass_fdctmgr (j_compress_ptr cinfo)
   JQUANT_TBL * qtbl;
   DCTELEM * dtbl;
 
+#ifdef IPP_ENCODE
+	Ipp8u rawqtbl[DCTSIZE2];
+	int izigzag_index[DCTSIZE2] =
+	{
+	   0,  1,  8, 16,  9,  2,  3, 10,
+	  17, 24, 32, 25, 18, 11,  4,  5,
+	  12, 19, 26, 33, 40, 48, 41, 34,
+	  27, 20, 13,  6,  7, 14, 21, 28,
+	  35, 42, 49, 56, 57, 50, 43, 36,
+	  29, 22, 15, 23, 30, 37, 44, 51,
+	  58, 59, 52, 45, 38, 31, 39, 46,
+	  53, 60, 61, 54, 47, 55, 62, 63
+	};
+#endif
+
   for (ci = 0, compptr = cinfo->comp_info; ci < cinfo->num_components;
        ci++, compptr++) {
     qtblno = compptr->quant_tbl_no;
@@ -81,11 +99,23 @@ start_pass_fdctmgr (j_compress_ptr cinfo)
 				      DCTSIZE2 * SIZEOF(DCTELEM));
       }
       dtbl = fdct->divisors[qtblno];
-      for (i = 0; i < DCTSIZE2; i++) {
-	dtbl[i] = ((DCTELEM) qtbl->quantval[i]) << 3;
+
+#ifdef IPP_ENCODE
+      /* reorder to zig-zag, because IPPJ expect raw tables in zig-zag */
+      /* but IJG have it in natural order */
+      for(i = 0; i < DCTSIZE2; i++) {
+            rawqtbl[i] = (unsigned char)qtbl->quantval[izigzag_index[i]];
       }
+      /* build encoder quant table */
+      ippiQuantFwdTableInit_JPEG_8u16u(rawqtbl,(Ipp16u*)dtbl);
+#else
+      for (i = 0; i < DCTSIZE2; i++) {
+            dtbl[i] = ((DCTELEM) qtbl->quantval[i]) << 3;
+      }
+#endif
       break;
 #endif
+
 #ifdef DCT_IFAST_SUPPORTED
     case JDCT_IFAST:
       {
@@ -175,6 +205,51 @@ start_pass_fdctmgr (j_compress_ptr cinfo)
  * position start_row/start_col, and moving to the right for any additional
  * blocks. The quantized coefficients are returned in coef_blocks[].
  */
+
+#ifdef IPP_ENCODE
+METHODDEF(void)
+forward_DCT_ipp (j_compress_ptr cinfo, jpeg_component_info * compptr,
+	     JSAMPARRAY sample_data, JBLOCKROW coef_blocks,
+	     JDIMENSION start_row, JDIMENSION start_col,
+	     JDIMENSION num_blocks)
+{
+  /* This routine is heavily used, so it's worth coding it tightly. */
+  JDIMENSION  bi;
+  my_fdct_ptr fdct = (my_fdct_ptr) cinfo->fdct;
+  DCTELEM*    divisors = fdct->divisors[compptr->quant_tbl_no];
+  Ipp8u       workspace[DCTSIZE2];  /* work area for FDCT subroutine */
+  Ipp8u*      workspaceptr;
+
+  sample_data += start_row; /* fold in the vertical offset once */
+
+  for(bi = 0; bi < num_blocks; bi++, start_col += DCTSIZE)
+  {
+    /* Load data into workspace */
+    register JSAMPROW elemptr;
+    register int      elemr;
+    register JCOEFPTR output_ptr = coef_blocks[bi];
+
+    workspaceptr = workspace;
+
+    for(elemr = 0; elemr < DCTSIZE; elemr++)
+    {
+      elemptr = sample_data[elemr] + start_col;
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+      *workspaceptr++ = GETJSAMPLE(*elemptr++);
+    }
+
+    ippiDCTQuantFwd8x8LS_JPEG_8u16s_C1R(workspace,8,output_ptr,(Ipp16u*)divisors);
+  }
+
+  return;
+} /* forward_DCT_intellib() */
+#endif
 
 METHODDEF(void)
 forward_DCT (j_compress_ptr cinfo, jpeg_component_info * compptr,
@@ -356,8 +431,12 @@ jinit_forward_dct (j_compress_ptr cinfo)
   switch (cinfo->dct_method) {
 #ifdef DCT_ISLOW_SUPPORTED
   case JDCT_ISLOW:
+#ifdef IPP_ENCODE
+    fdct->pub.forward_DCT = forward_DCT_ipp;
+#else
     fdct->pub.forward_DCT = forward_DCT;
     fdct->do_dct = jpeg_fdct_islow;
+#endif
     break;
 #endif
 #ifdef DCT_IFAST_SUPPORTED
