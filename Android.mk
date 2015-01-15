@@ -40,7 +40,7 @@ LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
 # enable tile based decode
 LOCAL_CFLAGS += -DANDROID_TILE_BASED_DECODE
 
-ifeq ($(TARGET_ARCH),x86)
+ifeq ($(ARCH_X86_HAVE_SSSE3),true)
   LOCAL_CFLAGS += -DANDROID_INTELSSE2_IDCT
   LOCAL_SRC_FILES += jidctintelsse.c
 endif
