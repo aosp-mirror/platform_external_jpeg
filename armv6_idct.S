@@ -61,10 +61,10 @@
 
 // void armv6_idct(short *coefs, int *quans, unsigned char *rows, int col)
     .arm
+    .syntax unified
     .text
     .align
     .global armv6_idct
-    .func   armv6_idct
 
 armv6_idct:
     // Push everything except sp (r13) and pc (r15).
@@ -97,9 +97,9 @@ pass1_head:
 
     // Check if ACs are all zero.
     cmp     r0, #0
-    orreqs  r8, r1, r2
-    orreqs  r8, r3, r5
-    orreqs  r8, r6, r7
+    orrseq  r8, r1, r2
+    orrseq  r8, r3, r5
+    orrseq  r8, r6, r7
     beq     pass1_zero
 
     // Step 1: Dequantizations.
@@ -128,8 +128,8 @@ pass1_head:
     mla     r1, r10, r1, r7
     mla     r3, r11, r3, r5
 
-    // Load constants.
-    ldrd    r10, constants
+    // Load constants to r10, r11.
+    ldrd    r10, r11, constants
 
     // Step 2: Rotations and Butterflies.
 
@@ -230,8 +230,8 @@ pass1_tail:
     ldr     r12, [sp, #256]
     ldr     r14, [sp, #260]
 
-    // Load constants.
-    ldrd    r10, constants
+    // Load constants to r10, r11.
+    ldrd    r10, r11, constants
 
 pass2_head:
     // Load coefficients. (c[0, 1, 2, 3, 4, 5, 6, 7])
@@ -355,4 +355,3 @@ pass2_tail:
 
     ldmia   sp!, {r4, r5, r6, r7, r8, r9, r10, r11, r12, r14}
     bx      lr
-    .endfunc

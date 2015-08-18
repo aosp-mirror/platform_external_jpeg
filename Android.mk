@@ -15,9 +15,6 @@ LOCAL_SRC_FILES := \
 
 LOCAL_SRC_FILES_arm += armv6_idct.S
 
-# jsimd_arm_neon.S does not compile with clang.
-LOCAL_CLANG_ASFLAGS_arm += -no-integrated-as
-
 ifeq (,$(TARGET_BUILD_APPS))
 # building against master
 # use ashmem as libjpeg decoder's backing store
