@@ -67,7 +67,6 @@
 
 /* Supplementary macro for setting function attributes */
 .macro asm_function fname
-    .func \fname
     .global \fname
 #ifdef __ELF__
     .hidden \fname
@@ -278,7 +277,6 @@ asm_function jsimd_idct_ifast_neon
     .unreq          OUTPUT_BUF
     .unreq          OUTPUT_COL
     .unreq          TMP
-.endfunc
 
 .purgem idct_helper
 
@@ -493,7 +491,6 @@ asm_function jsimd_idct_4x4_neon
     .unreq          TMP2
     .unreq          TMP3
     .unreq          TMP4
-.endfunc
 
 .purgem idct_helper
 
@@ -641,7 +638,6 @@ asm_function jsimd_idct_2x2_neon
     .unreq          OUTPUT_COL
     .unreq          TMP1
     .unreq          TMP2
-.endfunc
 
 .purgem idct_helper
 
@@ -896,7 +892,6 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
     .unreq          U
     .unreq          V
     .unreq          N
-.endfunc
 
 .purgem do_yuv_to_rgb
 
