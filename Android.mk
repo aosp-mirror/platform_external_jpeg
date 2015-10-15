@@ -32,6 +32,10 @@ ifeq ($(TARGET_ARCH),x86)
   LOCAL_SRC_FILES += jidctintelsse.c
 endif
 
+LOCAL_SRC_FILES_arm64 += \
+        jsimd_arm64_neon.S \
+        jsimd_neon.c
+
 ifeq ($(strip $(TARGET_ARCH)),arm)
   ifeq ($(ARCH_ARM_HAVE_NEON),true)
     #use NEON accelerations
