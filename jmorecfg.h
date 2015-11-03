@@ -373,7 +373,7 @@ typedef int boolean;
   #define MULTIPLIER short
 #elif ANDROID_MIPS_IDCT
   #define MULTIPLIER  short
-#elif defined(NV_ARM_NEON) || defined(__aarch64__)
+#elif NV_ARM_NEON
   #define MULTIPLIER short
 #else
   #define MULTIPLIER  int		/* type for fastest integer multiply */

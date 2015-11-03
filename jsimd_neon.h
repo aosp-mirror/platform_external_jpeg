@@ -30,19 +30,14 @@
 #include "jinclude.h"
 #include "jpeglib.h"
 
-#if (defined(NV_ARM_NEON) && defined(__ARM_HAVE_NEON)) || defined(__aarch64__)
+#if defined(NV_ARM_NEON) && defined(__ARM_HAVE_NEON)
 
 #if defined(ANDROID_ARMV6_IDCT)
-#error "ANDROID_ARMV6_IDCT and (NV_ARM_NEON or __arch64) are muturaly exclusive modes, both have been defined"
+#error "ANDROID_ARMV6_IDCT and NV_ARM_NEON are muturaly exclusive modes, both have been defined"
 #endif
 
 GLOBAL(void)
 jsimd_idct_2x2 (j_decompress_ptr cinfo, jpeg_component_info * compptr,
-                JCOEFPTR coef_block, JSAMPARRAY output_buf,
-                JDIMENSION output_col);
-
-GLOBAL(void)
-jsimd_idct_islow(j_decompress_ptr cinfo, jpeg_component_info * compptr,
                 JCOEFPTR coef_block, JSAMPARRAY output_buf,
                 JDIMENSION output_col);
 
@@ -63,9 +58,6 @@ GLOBAL(int)
 cap_neon_idct_4x4 (void);
 
 GLOBAL(int)
-cap_neon_idct_islow (void);
-
-GLOBAL(int)
 cap_neon_idct_ifast (void);
 
 GLOBAL(int)
@@ -73,11 +65,6 @@ cap_neon_ycc_rgb (void);
 
 GLOBAL(void)
 jsimd_ycc_rgb565_convert (j_decompress_ptr cinfo,
-                       JSAMPIMAGE input_buf, JDIMENSION input_row,
-                       JSAMPARRAY output_buf, int num_rows);
-
-GLOBAL(void)
-jsimd_ycc_rgb_convert (j_decompress_ptr cinfo,
                        JSAMPIMAGE input_buf, JDIMENSION input_row,
                        JSAMPARRAY output_buf, int num_rows);
 
