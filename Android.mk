@@ -22,6 +22,7 @@ endif
 
 LOCAL_CFLAGS += -DAVOID_TABLES
 LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
+LOCAL_CFLAGS += -Wno-unused-parameter
 #LOCAL_CFLAGS += -march=armv6j
 
 # enable tile based decode
