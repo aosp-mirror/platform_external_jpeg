@@ -1,9 +1,8 @@
 LOCAL_PATH:= $(call my-dir)
-include $(CLEAR_VARS)
 
-LOCAL_ARM_MODE := arm
+common_ARM_MODE := arm
 
-LOCAL_SRC_FILES := \
+common_SRC_FILES := \
     jcapimin.c jcapistd.c jccoefct.c jccolor.c jcdctmgr.c jchuff.c \
     jcinit.c jcmainct.c jcmarker.c jcmaster.c jcomapi.c jcparam.c \
     jcphuff.c jcprepct.c jcsample.c jctrans.c jdapimin.c jdapistd.c \
@@ -13,60 +12,75 @@ LOCAL_SRC_FILES := \
     jfdctint.c jidctflt.c jidctfst.c jidctint.c jidctred.c jquant1.c \
     jquant2.c jutils.c jmemmgr.c jmemnobs.c
 
-LOCAL_SRC_FILES_arm += armv6_idct.S
+common_SRC_FILES_arm := armv6_idct.S
 
-ifneq (,$(TARGET_BUILD_APPS))
-# unbundled branch, built against NDK.
-LOCAL_SDK_VERSION := 17
-endif
-
-LOCAL_CFLAGS += -DAVOID_TABLES
-LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
-LOCAL_CFLAGS += -Wno-unused-parameter
-#LOCAL_CFLAGS += -march=armv6j
+common_CFLAGS := -DAVOID_TABLES
+common_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays
+common_CFLAGS += -Wno-unused-parameter
+#common_CFLAGS += -march=armv6j
 
 # enable tile based decode
-LOCAL_CFLAGS += -DANDROID_TILE_BASED_DECODE
+common_CFLAGS += -DANDROID_TILE_BASED_DECODE
 
 ifeq ($(TARGET_ARCH),x86)
-  LOCAL_CFLAGS += -DANDROID_INTELSSE2_IDCT
-  LOCAL_SRC_FILES += jidctintelsse.c
+  common_CFLAGS += -DANDROID_INTELSSE2_IDCT
+  common_SRC_FILES += jidctintelsse.c
 endif
 
-LOCAL_SRC_FILES_arm64 += \
+common_SRC_FILES_arm64 += \
         jsimd_arm64_neon.S \
         jsimd_neon.c
 
 ifeq ($(strip $(TARGET_ARCH)),arm)
   ifeq ($(ARCH_ARM_HAVE_NEON),true)
     #use NEON accelerations
-    LOCAL_CFLAGS += -DNV_ARM_NEON -D__ARM_HAVE_NEON
-    LOCAL_SRC_FILES += \
+    common_CFLAGS += -DNV_ARM_NEON -D__ARM_HAVE_NEON
+    common_SRC_FILES += \
         jsimd_arm_neon.S \
         jsimd_neon.c
   else
     # enable armv6 idct assembly
-    LOCAL_CFLAGS += -DANDROID_ARMV6_IDCT
+    common_CFLAGS += -DANDROID_ARMV6_IDCT
   endif
 endif
 
 # use mips assembler IDCT implementation if MIPS DSP-ASE is present
 ifeq ($(strip $(TARGET_ARCH)),mips)
   ifeq ($(strip $(ARCH_MIPS_HAS_DSP)),true)
-  LOCAL_CFLAGS += -DANDROID_MIPS_IDCT
-  LOCAL_SRC_FILES += \
+  common_CFLAGS += -DANDROID_MIPS_IDCT
+  common_SRC_FILES += \
       mips_jidctfst.c \
       mips_idct_le.S
   endif
 endif
 
+
+# Build static library
+include $(CLEAR_VARS)
+LOCAL_ARM_MODE := $(common_ARM_MODE)
+LOCAL_SRC_FILES := $(common_SRC_FILES)
+LOCAL_SRC_FILES_arm += $(common_SRC_FILES_arm)
+ifneq (,$(TARGET_BUILD_APPS))
+# unbundled branch, built against NDK.
+LOCAL_SDK_VERSION := 17
+endif
+LOCAL_CFLAGS += $(common_CFLAGS)
+LOCAL_SRC_FILES_arm64 += $(common_SRC_FILES_arm64)
 LOCAL_MODULE := libjpeg_static
-
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
-
 include $(BUILD_STATIC_LIBRARY)
 
-
+# Build static library for NDK
+include $(CLEAR_VARS)
+LOCAL_ARM_MODE := $(common_ARM_MODE)
+LOCAL_SRC_FILES := $(common_SRC_FILES)
+LOCAL_SRC_FILES_arm += $(common_SRC_FILES_arm)
+LOCAL_SDK_VERSION := 17
+LOCAL_CFLAGS += $(common_CFLAGS)
+LOCAL_SRC_FILES_arm64 += $(common_SRC_FILES_arm64)
+LOCAL_MODULE := libjpeg_static_ndk
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
+include $(BUILD_STATIC_LIBRARY)
 
 # Build shared library
 include $(CLEAR_VARS)
