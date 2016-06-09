@@ -148,7 +148,7 @@ typedef my_marker_reader * my_marker_ptr;
 #define INPUT_BYTE(cinfo,V,action)  \
 	MAKESTMT( MAKE_BYTE_AVAIL(cinfo,action); \
 		  bytes_in_buffer--; \
-		  V = GETJOCTET(*next_input_byte++); )
+		  (V) = GETJOCTET(*next_input_byte++); )
 
 /* As above, but read two bytes interpreted as an unsigned 16-bit integer.
  * V should be declared unsigned int or perhaps INT32.
@@ -156,10 +156,10 @@ typedef my_marker_reader * my_marker_ptr;
 #define INPUT_2BYTES(cinfo,V,action)  \
 	MAKESTMT( MAKE_BYTE_AVAIL(cinfo,action); \
 		  bytes_in_buffer--; \
-		  V = ((unsigned int) GETJOCTET(*next_input_byte++)) << 8; \
+		  (V) = ((unsigned int) GETJOCTET(*next_input_byte++)) << 8; \
 		  MAKE_BYTE_AVAIL(cinfo,action); \
 		  bytes_in_buffer--; \
-		  V += GETJOCTET(*next_input_byte++); )
+		  (V) += GETJOCTET(*next_input_byte++); )
 
 
 /*

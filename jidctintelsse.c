@@ -129,20 +129,20 @@ jpeg_idct_intelsse (j_decompress_ptr cinfo, jpeg_component_info * compptr,
     row0 = _mm_shufflehi_epi16(row0, 0xD8); /*x7, x5, x6, x4, x3, x1, x2, x0*/    \
     row2 = _mm_shufflehi_epi16(row2, 0xD8);   \
 						\
-    tmp1 = _mm_madd_epi16(tmp1, * ( __m128i*)table1);      /*x2*w13+x0*w12, x2*w9+x0*w8, x2*w5+x0*w4, x2*w1+x0*w0*/   \
-    tmp5 = _mm_madd_epi16(tmp5, * ( __m128i*)table2);       \
+    tmp1 = _mm_madd_epi16(tmp1, * ( __m128i*)(table1));      /*x2*w13+x0*w12, x2*w9+x0*w8, x2*w5+x0*w4, x2*w1+x0*w0*/   \
+    tmp5 = _mm_madd_epi16(tmp5, * ( __m128i*)(table2));       \
 						\
     tmp2 =  _mm_shuffle_epi32(row0, 0xAA);  /*x6, x4, x6, x4, x6, x4, x6, x4*/    \
     tmp6 = _mm_shuffle_epi32(row2, 0xAA);     \
     row0 = _mm_shuffle_epi32(row0, 0xFF);   /*x7, x5, x7, x5, x7, x5, x7, x5*/    \
     row2 = _mm_shuffle_epi32(row2, 0xFF);     \
 \
-    tmp3 = _mm_madd_epi16(tmp3, * ( __m128i*)(table1+16)); /*x3*w29+x1*w28, x3*w25+x1*w24, x3*w21+x1*w20, x3*w17+x1*w16*/  \
-    tmp7 = _mm_madd_epi16(tmp7, * ( __m128i*)(table2+16) ); \
-    row0 = _mm_madd_epi16(row0, * ( __m128i*)(table1+24)); /*x7*w31+x5*w30, x7*w27+x5*w26, x7*w23+x5*w22, x7*w19+x5*w18*/  \
-    row2 = _mm_madd_epi16(row2, * ( __m128i*)(table2+24) ); \
-    tmp2 = _mm_madd_epi16(tmp2, * ( __m128i*)(table1+8) ); /*x6*w15+x4*w14, x6*w11+x4*w10, x6*w7+x4*w6, x6*w3+x4*w2*/  \
-    tmp6 = _mm_madd_epi16(tmp6, * ( __m128i*)(table2+8) );  \
+    tmp3 = _mm_madd_epi16(tmp3, * ( __m128i*)((table1)+16)); /*x3*w29+x1*w28, x3*w25+x1*w24, x3*w21+x1*w20, x3*w17+x1*w16*/  \
+    tmp7 = _mm_madd_epi16(tmp7, * ( __m128i*)((table2)+16) ); \
+    row0 = _mm_madd_epi16(row0, * ( __m128i*)((table1)+24)); /*x7*w31+x5*w30, x7*w27+x5*w26, x7*w23+x5*w22, x7*w19+x5*w18*/  \
+    row2 = _mm_madd_epi16(row2, * ( __m128i*)((table2)+24) ); \
+    tmp2 = _mm_madd_epi16(tmp2, * ( __m128i*)((table1)+8) ); /*x6*w15+x4*w14, x6*w11+x4*w10, x6*w7+x4*w6, x6*w3+x4*w2*/  \
+    tmp6 = _mm_madd_epi16(tmp6, * ( __m128i*)((table2)+8) );  \
                                                              \
     tmp1 = _mm_add_epi32(tmp1, * ( __m128i*)M128_round_inv_row);       \
     tmp5 = _mm_add_epi32(tmp5, * ( __m128i*)M128_round_inv_row);      \
