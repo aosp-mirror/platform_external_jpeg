@@ -31,7 +31,7 @@
  */
 
 #if BITS_IN_JSAMPLE == 8
-#define PUTPPMSAMPLE(ptr,v)  *ptr++ = (char) (v)
+#define PUTPPMSAMPLE(ptr,v)  *(ptr)++ = (char) (v)
 #define BYTESPERSAMPLE 1
 #define PPM_MAXVAL 255
 #else
