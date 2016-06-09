@@ -243,12 +243,12 @@ start_input_bmp (j_compress_ptr cinfo, cjpeg_source_ptr sinfo)
   bmp_source_ptr source = (bmp_source_ptr) sinfo;
   U_CHAR bmpfileheader[14];
   U_CHAR bmpinfoheader[64];
-#define GET_2B(array,offset)  ((unsigned int) UCH(array[offset]) + \
-			       (((unsigned int) UCH(array[offset+1])) << 8))
-#define GET_4B(array,offset)  ((INT32) UCH(array[offset]) + \
-			       (((INT32) UCH(array[offset+1])) << 8) + \
-			       (((INT32) UCH(array[offset+2])) << 16) + \
-			       (((INT32) UCH(array[offset+3])) << 24))
+#define GET_2B(array,offset)  ((unsigned int) UCH((array)[offset]) + \
+			       (((unsigned int) UCH((array)[(offset)+1])) << 8))
+#define GET_4B(array,offset)  ((INT32) UCH((array)[offset]) + \
+			       (((INT32) UCH((array)[(offset)+1])) << 8) + \
+			       (((INT32) UCH((array)[(offset)+2])) << 16) + \
+			       (((INT32) UCH((array)[(offset)+3])) << 24))
   INT32 bfOffBits;
   INT32 headerSize;
   INT32 biWidth = 0;		/* initialize to avoid compiler warning */

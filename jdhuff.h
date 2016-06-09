@@ -107,16 +107,16 @@ typedef struct {		/* Bitreading working state within an MCU */
 
 #define BITREAD_LOAD_STATE(cinfop,permstate)  \
 	br_state.cinfo = cinfop; \
-	br_state.next_input_byte = cinfop->src->next_input_byte; \
-	br_state.bytes_in_buffer = cinfop->src->bytes_in_buffer; \
-	get_buffer = permstate.get_buffer; \
-	bits_left = permstate.bits_left;
+	br_state.next_input_byte = (cinfop)->src->next_input_byte; \
+	br_state.bytes_in_buffer = (cinfop)->src->bytes_in_buffer; \
+	get_buffer = (permstate).get_buffer; \
+	bits_left = (permstate).bits_left;
 
 #define BITREAD_SAVE_STATE(cinfop,permstate)  \
 	cinfop->src->next_input_byte = br_state.next_input_byte; \
-	cinfop->src->bytes_in_buffer = br_state.bytes_in_buffer; \
-	permstate.get_buffer = get_buffer; \
-	permstate.bits_left = bits_left
+	(cinfop)->src->bytes_in_buffer = br_state.bytes_in_buffer; \
+	(permstate).get_buffer = get_buffer; \
+	(permstate).bits_left = bits_left
 
 /*
  * These macros provide the in-line portion of bit fetching.
@@ -174,25 +174,26 @@ EXTERN(boolean) jpeg_fill_bit_buffer
  * 3. jpeg_huff_decode returns -1 if forced to suspend.
  */
 
+/* NOLINT: clang-tidy adds wrong parentheses around 'slowlabel'. */
 #define HUFF_DECODE(result,state,htbl,failaction,slowlabel) \
 { register int nb, look; \
   if (bits_left < HUFF_LOOKAHEAD) { \
-    if (! jpeg_fill_bit_buffer(&state,get_buffer,bits_left, 0)) {failaction;} \
-    get_buffer = state.get_buffer; bits_left = state.bits_left; \
+    if (! jpeg_fill_bit_buffer(&(state),get_buffer,bits_left, 0)) {failaction;} \
+    get_buffer = (state).get_buffer; bits_left = (state).bits_left; \
     if (bits_left < HUFF_LOOKAHEAD) { \
-      nb = 1; goto slowlabel; \
+      nb = 1; goto slowlabel; /* NOLINT */ \
     } \
   } \
   look = PEEK_BITS(HUFF_LOOKAHEAD); \
-  if ((nb = htbl->look_nbits[look]) != 0) { \
+  if ((nb = (htbl)->look_nbits[look]) != 0) { \
     DROP_BITS(nb); \
-    result = htbl->look_sym[look]; \
-  } else { \
-    nb = HUFF_LOOKAHEAD+1; \
-slowlabel: \
-    if ((result=jpeg_huff_decode(&state,get_buffer,bits_left,htbl,nb)) < 0) \
+    (result) = (htbl)->look_sym[look]; \
+  } else { /* NOLINT */ \
+    nb = HUFF_LOOKAHEAD+1;  /* NOLINT */ \
+slowlabel: /* NOLINT */ \
+    if (((result)=jpeg_huff_decode(&(state),get_buffer,bits_left,htbl,nb)) < 0) \
 	{ failaction; } \
-    get_buffer = state.get_buffer; bits_left = state.bits_left; \
+    get_buffer = (state).get_buffer; bits_left = (state).bits_left; \
   } \
 }
 
