@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "e9eef035_51ed84fb",
+        "filename": "Android.mk",
+        "patchSetId": 3
+      },
+      "lineNbr": 80,
+      "author": {
+        "id": 1074628
+      },
+      "writtenOn": "2016-06-21T05:42:35Z",
+      "side": 1,
+      "message": "This is a copy of above. We could refactor it to share more variables, but I\u0027ll be converting this to an Android.bp shortly anyway.",
+      "revId": "f145037bc84ef5d4400e047fc2a0e697a481e22c",
+      "serverId": "85c56323-6fa9-3386-8a01-6480fb634889",
+      "unresolved": false
+    }
+  ]
+}
