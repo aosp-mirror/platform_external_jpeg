@@ -1725,6 +1725,10 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
     V               .req x10
     N               .req x15
 
+    /* Zero-extend the low 32bit word in x2 to follow the declaration of
+       color_convert: INPUT_ROW is a JDIMENSION that is an unsigned int.  */
+    uxtw x2, w2
+
     sub             sp, sp, 336
     str             x15, [sp], 16
     /* Load constants to d1, d2, d3 (v0.4h is just used for padding) */
