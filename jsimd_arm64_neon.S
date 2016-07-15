@@ -237,6 +237,11 @@ asm_function jsimd_idct_islow_neon
     TMP3            .req x2
     TMP4            .req x15
 
+    /* OUTPUT_COL is a JDIMENSION (unsigned int) argument, so the ABI doesn't
+       guarantee that the upper (unused) 32 bits of x3 are valid.  This
+       instruction ensures that those bits are set to zero. */
+    uxtw x3, w3
+
     ROW0L           .req v16
     ROW0R           .req v17
     ROW1L           .req v18
@@ -794,6 +799,11 @@ asm_function jsimd_idct_ifast_neon
     TMP4            .req x22
     TMP5            .req x23
 
+    /* OUTPUT_COL is a JDIMENSION (unsigned int) argument, so the ABI doesn't
+       guarantee that the upper (unused) 32 bits of x3 are valid.  This
+       instruction ensures that those bits are set to zero. */
+    uxtw x3, w3
+
     /* Load and dequantize coefficients into NEON registers
      * with the following allocation:
      *       0 1 2 3 | 4 5 6 7
@@ -1167,6 +1177,11 @@ asm_function jsimd_idct_4x4_neon
     TMP3            .req x2
     TMP4            .req x15
 
+    /* OUTPUT_COL is a JDIMENSION (unsigned int) argument, so the ABI doesn't
+       guarantee that the upper (unused) 32 bits of x3 are valid.  This
+       instruction ensures that those bits are set to zero. */
+    uxtw x3, w3
+
     /* Save all used NEON registers */
     sub             sp, sp, 272
     str             x15, [sp], 16
@@ -1361,6 +1376,12 @@ asm_function jsimd_idct_2x2_neon
     OUTPUT_COL      .req x3
     TMP1            .req x0
     TMP2            .req x15
+
+   /* OUTPUT_COL is a JDIMENSION (unsigned int) argument, so the ABI doesn't
+       guarantee that the upper (unused) 32 bits of x3 are valid.  This
+       instruction ensures that those bits are set to zero. */
+    uxtw x3, w3
+
 
     /* vpush           {v8.4h - v15.4h}            ; not available */
     sub             sp, sp, 208
@@ -1709,11 +1730,11 @@ Ljsimd_ycc_\colorid\()_neon_consts:
     .short          -128,  -128,   -128,   -128
 
 asm_function jsimd_ycc_\colorid\()_convert_neon
-    OUTPUT_WIDTH    .req x0
+    OUTPUT_WIDTH    .req w0
     INPUT_BUF       .req x1
-    INPUT_ROW       .req x2
+    INPUT_ROW       .req w2
     OUTPUT_BUF      .req x3
-    NUM_ROWS        .req x4
+    NUM_ROWS        .req w4
 
     INPUT_BUF0      .req x5
     INPUT_BUF1      .req x6
@@ -1723,7 +1744,7 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
     Y               .req x8
     U               .req x9
     V               .req x10
-    N               .req x15
+    N               .req w15
 
     sub             sp, sp, 336
     str             x15, [sp], 16
@@ -1760,11 +1781,10 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
     cmp             NUM_ROWS, #1
     b.lt            9f
 0:
-    lsl             x16, INPUT_ROW, #3
-    ldr             Y, [INPUT_BUF0, x16]
-    ldr             U, [INPUT_BUF1, x16]
+    ldr             Y, [INPUT_BUF0, INPUT_ROW, uxtw #3]
+    ldr             U, [INPUT_BUF1, INPUT_ROW, uxtw #3]
     mov             N, OUTPUT_WIDTH
-    ldr             V, [INPUT_BUF2, x16]
+    ldr             V, [INPUT_BUF2, INPUT_ROW, uxtw #3]
     add             INPUT_ROW, INPUT_ROW, #1
     ldr             RGB, [OUTPUT_BUF], #8
 
