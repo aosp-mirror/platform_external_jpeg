@@ -1,0 +1,9 @@
+Presubmit-Verified+1: Treehugger Robot <treehugger-gerrit@google.com>
+Code-Review+2: Matt Sarett <msarett@google.com>
+Code-Review+2: Stephen Hines <srhines@google.com>
+Verified+1: Elliott Hughes <enh@google.com>
+Submitted-by: Elliott Hughes <enh@google.com>
+Submitted-at: Fri, 15 Jul 2016 16:50:09 +0000
+Reviewed-on: https://android-review.googlesource.com/248151
+Project: platform/external/jpeg
+Branch: refs/heads/master
